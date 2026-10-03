@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B站音频下载器</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=22">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="logo">B站音频下载器</div>
+            <div class="header-right">
+                <div class="ffmpeg-status" id="ffmpegStatus">
+                    <span class="dot"></span>
+                    <span class="text">检查中...</span>
+                </div>
+                <a href="/settings" class="icon-btn" title="设置">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </a>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="card">
+                <div class="card-title">视频链接</div>
+                <div class="input-row">
+                    <input type="text" id="url" class="input"
+                           placeholder="单曲链接 或 收藏夹/合集链接" />
+                    <button class="btn-ghost" id="pasteUrlBtn">粘贴</button>
+                </div>
+                <div class="file-hint" id="urlHint">
+                    支持单曲（/video/BVxxx）和收藏夹（space.bilibili.com/xxx/favlist?fid=xxx）
+                </div>
+            </section>
+
+            <section class="card" id="batchCard" style="display:none">
+                <div class="card-title">收藏夹列表</div>
+                <div class="batch-header">
+                    <div class="batch-info">
+                        <div class="batch-title" id="batchTitle">—</div>
+                        <div class="batch-meta" id="batchMeta"></div>
+                    </div>
+                    <div class="batch-actions">
+                        <button class="btn-ghost" id="batchSelectAllBtn">全选</button>
+                        <button class="btn-ghost" id="batchUnselectAllBtn">全不选</button>
+                    </div>
+                </div>
+                <div class="batch-list" id="batchList"></div>
+                <div class="file-hint" id="batchHint"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">输出设置</div>
+                <div class="field">
+                    <label>保存目录</label>
+                    <input type="text" id="saveDir" class="input">
+                </div>
+                <div class="field">
+                    <label>音量倍数</label>
+                    <div class="slider-row">
+                        <input type="range" id="volume" min="0.1" max="3.0"
+                               step="0.05" value="1.0" class="slider">
+                        <span class="value-badge" id="volumeLabel">1.00x</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>快捷音量</label>
+                    <div class="btn-group">
+                        <button class="btn-ghost" data-vol="0.5">0.5x</button>
+                        <button class="btn-ghost" data-vol="1.0">1.0x</button>
+                        <button class="btn-ghost" data-vol="1.5">1.5x</button>
+                        <button class="btn-ghost" data-vol="2.0">2.0x</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>MP3 码率</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="quality" value="128"> 128k</label>
+                        <label><input type="radio" name="quality" value="192" checked> 192k</label>
+                        <label><input type="radio" name="quality" value="256"> 256k</label>
+                        <label><input type="radio" name="quality" value="320"> 320k</label>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="switch-row">
+                        <input type="checkbox" id="normalize">
+                        <span>响度均衡（统一所有 MP3 音量）</span>
+                    </label>
+                </div>
+                <div class="field" id="lufsField" style="display:none">
+                    <label>目标响度 (LUFS)</label>
+                    <div class="slider-row">
+                        <input type="range" id="targetLufs" min="-24" max="-10"
+                               step="0.5" value="-16" class="slider">
+                        <span class="value-badge" id="targetLufsLabel">-16.0</span>
+                    </div>
+                    <div class="file-hint">
+                        推荐：-16（音乐）/ -14（流媒体）/ -23（广播）
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">脉冲反馈（可选）</div>
+                <label class="switch-row">
+                    <input type="checkbox" id="enablePulse">
+                    <span>启用脉冲反馈处理</span>
+                </label>
+
+                <div id="pulseOptions" style="display:none">
+                    <div class="field">
+                        <label>脉冲样本文件</label>
+                        <div class="input-row">
+                            <input type="text" id="irsPath" class="input"
+                                   placeholder="未选择文件" readonly>
+                            <button class="btn-ghost" id="chooseIrsBtn">选择文件</button>
+                            <button class="btn-ghost" id="scanIrsBtn">扫描 VIPER</button>
+                        </div>
+                        <input type="file" id="irsFileInput" accept=".irs,.wav"
+                               style="display:none">
+                        <div class="file-hint" id="irsHint"></div>
+                    </div>
+
+                    <div class="irs-list" id="irsList" style="display:none">
+                        <div class="irs-list-header">
+                            <span id="irsListTitle">VIPER 目录</span>
+                            <span class="irs-list-count" id="irsListCount">0 个</span>
+                        </div>
+                        <div class="irs-list-body" id="irsListBody"></div>
+                    </div>
+
+                    <div class="field sub-field">
+                        <label>通道交叉强度（随脉冲反馈自动启用）</label>
+                        <div class="slider-row">
+                            <input type="range" id="crossfeed" min="0" max="1"
+                                   step="0.05" value="0.3" class="slider">
+                            <span class="value-badge" id="crossfeedLabel">0.30</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="actions">
+                <button class="btn-primary" id="startBtn">开始下载</button>
+                <button class="btn-ghost" id="resetTaskBtn">重置任务</button>
+                <button class="btn-ghost" id="installFfmpegBtn">安装 FFmpeg</button>
+                <button class="btn-ghost" id="clearLogBtn">清空日志</button>
+            </div>
+
+            <section class="card" id="playCard" style="display:none">
+                <div class="card-title">试听（最后完成的音频）</div>
+                <div class="play-header">
+                    <div class="play-info">
+                        <div class="play-title" id="playTitle">—</div>
+                        <div class="play-meta" id="playMeta"></div>
+                    </div>
+                    <a class="btn-ghost" id="playDownloadLink"
+                       style="text-decoration:none; display:none;"
+                       download>下载此文件</a>
+                </div>
+                <audio id="playPlayer" controls preload="metadata"
+                       style="width:100%"></audio>
+                <div class="file-hint" id="playHint"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">运行日志</div>
+                <div class="log" id="log"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/main.js?v=22"></script>
+</body>
+</html>

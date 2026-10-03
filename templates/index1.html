@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B站音频下载器</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=8">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="logo">B站音频下载器</div>
+            <div class="ffmpeg-status" id="ffmpegStatus">
+                <span class="dot"></span>
+                <span class="text">检查中...</span>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="card">
+                <div class="card-title">视频链接</div>
+                <div class="input-row">
+                    <input type="text" id="url" class="input"
+                           placeholder="https://www.bilibili.com/video/BV..." />
+                    <button class="btn-ghost" id="pasteUrlBtn"
+                            onclick="pasteUrlFromClipboard()">从剪贴板粘贴</button>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">输出设置</div>
+                <div class="field">
+                    <label>保存目录</label>
+                    <input type="text" id="saveDir" class="input">
+                </div>
+                <div class="field">
+                    <label>音量倍数</label>
+                    <div class="slider-row">
+                        <input type="range" id="volume" min="0.1" max="3.0"
+                               step="0.05" value="1.0" class="slider">
+                        <span class="value-badge" id="volumeLabel">1.00x</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>快捷音量</label>
+                    <div class="btn-group">
+                        <button class="btn-ghost" data-vol="0.5">0.5x</button>
+                        <button class="btn-ghost" data-vol="1.0">1.0x</button>
+                        <button class="btn-ghost" data-vol="1.5">1.5x</button>
+                        <button class="btn-ghost" data-vol="2.0">2.0x</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>MP3 码率</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="quality" value="128"> 128k</label>
+                        <label><input type="radio" name="quality" value="192" checked> 192k</label>
+                        <label><input type="radio" name="quality" value="256"> 256k</label>
+                        <label><input type="radio" name="quality" value="320"> 320k</label>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="switch-row">
+                        <input type="checkbox" id="normalize">
+                        <span>响度均衡（统一所有 MP3 音量）</span>
+                    </label>
+                </div>
+                <div class="field" id="lufsField" style="display:none">
+                    <label>目标响度 (LUFS)</label>
+                    <div class="slider-row">
+                        <input type="range" id="targetLufs" min="-24" max="-10"
+                               step="0.5" value="-16" class="slider">
+                        <span class="value-badge" id="targetLufsLabel">-16.0</span>
+                    </div>
+                    <div class="file-hint">
+                        推荐：-16（音乐）/ -14（流媒体）/ -23（广播）
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">脉冲反馈（可选）</div>
+                <label class="switch-row">
+                    <input type="checkbox" id="enablePulse">
+                    <span>启用脉冲反馈处理</span>
+                </label>
+
+                <div id="pulseOptions" style="display:none">
+                    <div class="field">
+                        <label>脉冲样本文件</label>
+                        <div class="input-row">
+                            <input type="text" id="irsPath" class="input"
+                                   placeholder="未选择文件" readonly>
+                            <button class="btn-ghost" id="chooseIrsBtn"
+                                    onclick="chooseIrsFile()">选择文件</button>
+                            <button class="btn-ghost" id="scanIrsBtn"
+                                    onclick="scanIrsFiles()">扫描 VIPER</button>
+                        </div>
+                        <input type="file" id="irsFileInput" accept=".irs,.wav"
+                               style="display:none">
+                        <div class="file-hint" id="irsHint"></div>
+                    </div>
+
+                    <div class="irs-list" id="irsList" style="display:none">
+                        <div class="irs-list-header">
+                            <span id="irsListTitle">VIPER 目录</span>
+                            <span class="irs-list-count" id="irsListCount">0 个</span>
+                        </div>
+                        <div class="irs-list-body" id="irsListBody"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">通道交叉（可选）</div>
+                <label class="switch-row">
+                    <input type="checkbox" id="enableCrossfeed" checked>
+                    <span>启用通道交叉（改善耳机听感）</span>
+                </label>
+                <div class="field">
+                    <label>交叉强度</label>
+                    <div class="slider-row">
+                        <input type="range" id="crossfeed" min="0" max="1"
+                               step="0.05" value="0.3" class="slider">
+                        <span class="value-badge" id="crossfeedLabel">0.30</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="actions">
+                <button class="btn-primary" id="startBtn"
+                        onclick="startDownload()">开始下载</button>
+                <button class="btn-ghost" id="installFfmpegBtn"
+                        onclick="installFFmpeg()">安装 FFmpeg</button>
+                <button class="btn-ghost" id="clearLogBtn"
+                        onclick="clearLog()">清空日志</button>
+            </div>
+
+            <section class="card">
+                <div class="card-title">运行日志</div>
+                <pre class="log" id="log"></pre>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/main.js?v=8"></script>
+</body>
+</html>
