@@ -4,7 +4,11 @@
 
 ## 安装依赖
 
-    等我找全ww
+    flask>=3.0.0
+    yt-dlp>=2024.1.0
+    requests>=2.31.0
+    PySide6>=6.6.0
+    waitress>=3.0.0
 
 ## 运行
 
